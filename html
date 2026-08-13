@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Racha Cuca</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border-radius: 30px;
+            padding: 30px 40px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            margin-top: 0;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #eee;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+
+        .info span {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+
+        .btn-new {
+            background: #f39c12;
+            border: none;
+            color: #1e2a3a;
+            font-weight: 700;
+            padding: 8px 22px;
+            border-radius: 40px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 0 #b86d0e;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-new:hover {
+            transform: scale(1.03);
+            background: #f1c40f;
+            box-shadow: 0 6px 0 #b86d0e;
+        }
+
+        .btn-new:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #b86d0e;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            background: #0f1a2b;
+            padding: 12px;
+            border-radius: 24px;
+            box-shadow: inset 0 0 0 2px #2a3a55, 0 10px 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .tile {
+            aspect-ratio: 1 / 1;
+            background: #2e4a7a;
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.15s ease;
+            box-shadow: 0 6px 0 #0f1a2b;
+            user-select: none;
+        }
+
+        .tile:hover:not(.empty) {
+            transform: scale(1.02);
+            background: #3d5f94;
+        }
+
+        .tile:active:not(.empty) {
+            transform: scale(0.94);
+        }
+
+        .tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .tile.empty:hover {
+            transform: none;
+        }
+
+        .message {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #f1c40f;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 5px;
+            min-height: 44px;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 450px) {
+            .container {
+                padding: 20px 15px 25px;
+            }
+
+            .tile {
+                font-size: 1.6rem;
+            }
+
+            .grid {
+                gap: 6px;
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .info {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧩 Racha Cuca</h1>
+
+        <div class="info">
+            <span id="movimentos">Movimentos: 0</span>
+            <button class="btn-new" id="btnNovoJogo">🔄 Novo Jogo</button>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="footer">
+            <div class="message" id="mensagem"></div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ---------- CONFIGURAÇÃO ----------
+            const TAMANHO = 4; // 4x4
+            const TOTAL_PECAS = TAMANHO * TAMANHO;
+
+            // Estado do jogo
+            let pecas = [];
+            let vazioIndex = TOTAL_PECAS - 1; // última posição (índice 15)
+            let movimentos = 0;
+            let jogoFinalizado = false;
+
+            // Elementos DOM
+            const gridEl = document.getElementById('grid');
+            const movimentosEl = document.getElementById('movimentos');
+            const mensagemEl = document.getElementById('mensagem');
+            const btnNovo = document.getElementById('btnNovoJogo');
+
+            // ---------- FUNÇÕES AUXILIARES ----------
+            function embaralharArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            // Verifica se o tabuleiro é solucionável (para 4x4)
+            function isSolucionavel(arr) {
+                let inversoes = 0;
+                const linhaVazio = Math.floor(arr.indexOf(0) / TAMANHO) + 1; // linha de baixo pra cima (1 a 4)
+
+                for (let i = 0; i < arr.length; i++) {
+                    if (arr[i] === 0) continue;
+                    for (let j = i + 1; j < arr.length; j++) {
+                        if (arr[j] === 0) continue;
+                        if (arr[i] > arr[j]) inversoes++;
+                    }
+                }
+
+                // Regra: se TAMANHO for ímpar, solução se inversões for par.
+                // Se TAMANHO for par, solução se (inversoes + linhaVazio) for par.
+                if (TAMANHO % 2 === 1) {
+                    return inversoes % 2 === 0;
+                } else {
+                    return (inversoes + linhaVazio) % 2 === 0;
+                }
+            }
+
+            // Gera um estado inicial solucionável
+            function gerarEstadoSolucionavel() {
+                // Cria array com 1..15 e 0 no final
+                let arr = Array.from({ length: TOTAL_PECAS }, (_, i) => (i < TOTAL_PECAS - 1 ? i + 1 : 0));
+                let tentativas = 0;
+                do {
+                    embaralharArray(arr);
+                    tentativas++;
+                } while (!isSolucionavel(arr) && tentativas < 1000);
+
+                // Se por algum motivo não achou (improvável), força um estado manual
+                if (!isSolucionavel(arr)) {
+                    // Estado conhecido solucionável (já resolvido, mas desordenado)
+                    arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15]; // solucionável
+                    // Depois embaralha levemente mantendo solucionável? Mas vamos deixar assim.
+                    // Vamos apenas garantir que não seja resolvido.
+                    if (isSolucionavel(arr)) {
+                        // faz uma troca simples que mantém solucionável
+                        [arr[0], arr[1]] = [arr[1], arr[0]];
+                    }
+                }
+                return arr;
+            }
+
+            // ---------- INICIALIZAR / REINICIAR JOGO ----------
+            function iniciarJogo() {
+                const estado = gerarEstadoSolucionavel();
+                pecas = [...estado];
+                vazioIndex = pecas.indexOf(0);
+                movimentos = 0;
+                jogoFinalizado = false;
+                mensagemEl.textContent = '';
+                renderizar();
+                atualizarInfo();
+            }
+
+            // ---------- RENDERIZAÇÃO ----------
+            function renderizar() {
+                gridEl.innerHTML = '';
+                for (let i = 0; i < pecas.length; i++) {
+                    const valor = pecas[i];
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    if (valor === 0) {
+                        tile.classList.add('empty');
+                        tile.textContent = '';
+                    } else {
+                        tile.textContent = valor;
+                    }
+                    tile.dataset.index = i;
+                    tile.addEventListener('click', () => onTileClick(i));
+                    gridEl.appendChild(tile);
+                }
+            }
+
+            // ---------- ATUALIZAR CONTADORES ----------
+            function atualizarInfo() {
+                movimentosEl.textContent = `Movimentos: ${movimentos}`;
+            }
+
+            // ---------- LÓGICA DE MOVIMENTO ----------
+            function moverPeca(index) {
+                if (jogoFinalizado) return false;
+
+                const linhaVazio = Math.floor(vazioIndex / TAMANHO);
+                const colVazio = vazioIndex % TAMANHO;
+                const linhaPeca = Math.floor(index / TAMANHO);
+                const colPeca = index % TAMANHO;
+
+                // Verifica se a peça está adjacente (cima, baixo, esquerda, direita)
+                const diffLinha = Math.abs(linhaVazio - linhaPeca);
+                const diffCol = Math.abs(colVazio - colPeca);
+
+                if ((diffLinha === 1 && diffCol === 0) || (diffLinha === 0 && diffCol === 1)) {
+                    // Troca a peça com o vazio
+                    pecas[vazioIndex] = pecas[index];
+                    pecas[index] = 0;
+                    vazioIndex = index;
+                    movimentos++;
+                    atualizarInfo();
+                    renderizar();
+
+                    // Verifica vitória
+                    if (verificarVitoria()) {
+                        jogoFinalizado = true;
+                        mensagemEl.textContent = '🎉 Parabéns! Você venceu! 🎉';
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            // ---------- CLIQUE NO TILE ----------
+            function onTileClick(index) {
+                if (jogoFinalizado) return;
+                if (pecas[index] === 0) return; // clicou no vazio
+                moverPeca(index);
+            }
+
+            // ---------- VERIFICA VITÓRIA ----------
+            function verificarVitoria() {
+                // Verifica se está na ordem 1, 2, 3, ..., 15, 0
+                for (let i = 0; i < TOTAL_PECAS - 1; i++) {
+                    if (pecas[i] !== i + 1) return false;
+                }
+                return pecas[TOTAL_PECAS - 1] === 0;
+            }
+
+            // ---------- EVENTO DO BOTÃO NOVO JOGO ----------
+            btnNovo.addEventListener('click', () => {
+                iniciarJogo();
+            });
+
+            // ---------- INICIALIZAÇÃO ----------
+            iniciarJogo();
+
+            // (Opcional) Teclado: setas para movimentar (extra)
+            document.addEventListener('keydown', (e) => {
+                if (jogoFinalizado) return;
+                const key = e.key;
+                let targetIndex = -1;
+                const linha = Math.floor(vazioIndex / TAMANHO);
+                const col = vazioIndex % TAMANHO;
+
+                if (key === 'ArrowUp' && linha < TAMANHO - 1) {
+                    targetIndex = vazioIndex + TAMANHO;
+                } else if (key === 'ArrowDown' && linha > 0) {
+                    targetIndex = vazioIndex - TAMANHO;
+                } else if (key === 'ArrowLeft' && col < TAMANHO - 1) {
+                    targetIndex = vazioIndex + 1;
+                } else if (key === 'ArrowRight' && col > 0) {
+                    targetIndex = vazioIndex - 1;
+                }
+
+                if (targetIndex !== -1 && targetIndex >= 0 && targetIndex < TOTAL_PECAS) {
+                    e.preventDefault();
+                    moverPeca(targetIndex);
+                }
+            });
+
+        })();
+    </script>
+</body>
+
+</html>
